@@ -12,6 +12,10 @@
 #include <sm/vec>                 // sm::vec - a static-sized vector (like std::array) with maths
 #include <sm/vvec>                // sm::vvec - a dynamic vector (like std::vector) with maths
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 int main()
 {
     int rtn = 0;
@@ -24,6 +28,25 @@ int main()
     // Some positioning values used to place each of the GraphVisuals:
     constexpr float step = 1.4f;
     constexpr float row2 = 1.2f;
+
+    // Imgui state
+    //const char* glsl_version = "#version 300";
+    bool show_demo_window = true;
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    // Imgui init
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    std::cout << "v.getWindow() returns " << v.getWindow() << std::endl;
+    ImGui_ImplGlfw_InitForOpenGL(v.getWindow(), true);
+    std::cout << "Call ImGui_ImplOpenGL3_Init()\n";
+    ImGui_ImplOpenGL3_Init(); // Failed to initialize OpenGL loader!
+    std::cout << "ImGui_ImplOpenGL3_Init() returned\n";
 
     try {
 
@@ -105,8 +128,39 @@ int main()
         gv->finalize();
         v.addVisualModel (gv);
 
+        // ImGui
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+        {
+            static float f = 0.0f;
+            static int counter = 0;
+
+            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                counter++;
+            ImGui::SameLine();
+            ImGui::Text("counter = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::End();
+        }
+
         // Display until user closes window
-        v.keepOpen();
+        while (!v.readyToFinish()) {
+            v.waitevents (0.017);
+            v.render();
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
 
     } catch (const std::exception& e) {
         std::cerr << "Caught exception: " << e.what() << std::endl;

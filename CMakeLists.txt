@@ -39,6 +39,9 @@ set(MPLOT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/mathplot" CACHE PATH "The path to 
 include_directories(BEFORE ${MPLOT_INCLUDE_PATH})         # Allows mplot/Header.h to be found
 include_directories(BEFORE ${MPLOT_INCLUDE_PATH}/maths)   # Allows sm/Header.h to be found
 
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/imgui)            # Imgui
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/imgui/backends)   #
+
 # If you want to add another directory to your include path, you can add an extra include_directories call:
 # include_directories(BEFORE ${PROJECT_SOURCE_DIR}/my_includes)
 
@@ -47,7 +50,10 @@ include_directories(BEFORE ${MPLOT_INCLUDE_PATH}/maths)   # Allows sm/Header.h t
 #
 
 # The sample is compiled from a single c++ file
-add_executable(prog1 prog1.cpp)
+add_executable(prog1 prog1.cpp imgui/imgui.cpp
+  imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp
+  imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/imgui_draw.cpp
+)
 
 # Mathplot code requires a number of libraries, these are the ones required for graphics
 target_link_libraries(prog1 OpenGL::GL Freetype::Freetype glfw)
