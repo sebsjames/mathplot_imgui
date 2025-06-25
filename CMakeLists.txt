@@ -49,11 +49,11 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/imgui/backends)   #
 # All the library finding is now done. It's time to compile the program.
 #
 
-# The sample is compiled from a single c++ file
-add_executable(prog1 prog1.cpp imgui/imgui.cpp
-  imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp
-  imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/imgui_draw.cpp
-)
+set(IMGUI_SOURCES imgui/imgui.cpp
+                  imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp
+                  imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/imgui_draw.cpp)
+# The sample is compiled from a single c++ file along with the ImGui sources
+add_executable(prog1 prog1.cpp ${IMGUI_SOURCES})
 
 # Mathplot code requires a number of libraries, these are the ones required for graphics
 target_link_libraries(prog1 OpenGL::GL Freetype::Freetype glfw)

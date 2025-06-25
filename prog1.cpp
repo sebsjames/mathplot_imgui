@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 
-#include <mplot/Visual.h>         // mplot::Visual - the scene class
+#include <mplot/VisualNoMX.h>         // mplot::Visual - the scene class
 #include <mplot/GraphVisual.h>    // mplot::GraphVisual - the 2D graph class
 #include <mplot/DatasetStyle.h>   // mplot::DatasetStyle - setting style attributes for graphs
 #include <mplot/colour.h>         // access to mplot::colour namespace
@@ -21,32 +21,32 @@ int main()
     int rtn = 0;
 
     // Create a mplot::Visual. This is linked to a window on your desktop when the program runs
-    mplot::Visual v(1536, 1536, "A variety of graph formats");
+    mplot::VisualNoMX v(1536, 1536, "A variety of graph formats");
     // Set scene translation to position the graphs in the centre of the window (See Ctrl-z output to stdout)
     v.setSceneTrans (sm::vec<float,3>({-1.21382f, 0.199316f, -5.9f}));
+
+    // Set the OpenGL context before ImGui initialization
+    v.setContext();
 
     // Some positioning values used to place each of the GraphVisuals:
     constexpr float step = 1.4f;
     constexpr float row2 = 1.2f;
 
-    // Imgui state
-    //const char* glsl_version = "#version 300";
+    // Dear ImGui
+    const char* glsl_version = "#version 410 core";
     bool show_demo_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    // Imgui init
-
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-    std::cout << "v.getWindow() returns " << v.getWindow() << std::endl;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    std::cout << "Call ImGui_ImplGlfw_InitForOpenGL" << std::endl;
     ImGui_ImplGlfw_InitForOpenGL(v.getWindow(), true);
-    std::cout << "Call ImGui_ImplOpenGL3_Init()\n";
-    ImGui_ImplOpenGL3_Init(); // Failed to initialize OpenGL loader!
-    std::cout << "ImGui_ImplOpenGL3_Init() returned\n";
+    // Now, I want to use my own OpenGL stuff, as loaded with the Visual.
+    std::cout << "Call ImGui_ImplOpenGL3_Init()" << std::endl;
+    ImGui_ImplOpenGL3_Init(glsl_version); // Failed to initialize OpenGL loader!
+    std::cout << "ImGui_ImplOpenGL3_Init() returned" << std::endl;
 
     try {
 
@@ -128,38 +128,43 @@ int main()
         gv->finalize();
         v.addVisualModel (gv);
 
-        // ImGui
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-            ImGui::End();
-        }
-
         // Display until user closes window
         while (!v.readyToFinish()) {
             v.waitevents (0.017);
-            v.render();
+
+            v.setContext(); // Ensure context for ImGui
+
+            // Start the Dear ImGui frame
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            // (From example) Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
+            {
+                static float f = 0.0f;
+                static int counter = 0;
+
+                ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+                ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+                ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+                ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+                if (ImGui::Button("Button")) { // Buttons return true when clicked (most widgets return true when edited/activated)
+                    counter++;
+                }
+                ImGui::SameLine();
+                ImGui::Text("counter = %d", counter);
+
+                ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+                ImGui::End();
+            }
+
+            v.render(); // swaps buffers
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            glfwSwapBuffers(v.getWindow());
         }
 
     } catch (const std::exception& e) {
