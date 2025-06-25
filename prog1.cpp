@@ -5,7 +5,7 @@
 #include <memory>
 
 #include <mplot/Visual.h>         // mplot::Visual - the scene class
-#include <mplot/GraphVisual.h>    // mplot::GraphVisual - the 2D graph class
+#include <mplot/GeodesicVisual.h> // mplot::GeodesicVisual
 #include <mplot/DatasetStyle.h>   // mplot::DatasetStyle - setting style attributes for graphs
 #include <mplot/colour.h>         // access to mplot::colour namespace
 #include <mplot/unicode.h>        // mplot::unicode - Unicode text handling
@@ -16,10 +16,13 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+// The ImGui Demo window (and its code imgui_demo.cpp) is useful for finding out about widgets etc
+#define COMPILE_DEMO_WINDOW 1
+
 // In this example, we extend mplot::Visual to add the ability to display an ImGui frame in our window
 struct imgui_visual final : public mplot::Visual<>
 {
-    // Boilerplate constructor (just copy this):
+    // In our constructor, we carry out the ImGui setup
     imgui_visual (int width, int height, const std::string& title) : mplot::Visual<> (width, height, title)
     {
         // Additional ImGui setup
@@ -31,53 +34,73 @@ struct imgui_visual final : public mplot::Visual<>
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         ImGui_ImplGlfw_InitForOpenGL (this->window, true);
-        const char* imgui_glsl_version = "#version 410 core";
-        ImGui_ImplOpenGL3_Init (imgui_glsl_version);
+        ImGui_ImplOpenGL3_Init();
     }
 
     // Draw the GUI frame for your Visual. This frame then updates the state stored in
     // your visual and you can update your graphs/visualizations accordingly
     void gui_draw()
     {
-        if (this->show_gui == false) { return; }
+        if (this->show_gui == true) {
+            // The ImGui scheme seems to be to rebuild the frame on each rendering
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
 
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // (From example) Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
-        {
-            ImGuiIO& io = ImGui::GetIO(); // Get io reference
-
-            ImGui::Begin("Parameters");                             // Create a window called "Parameters" and append into it.
-
-            ImGui::Text("These are the parameters for your system.");
-            ImGui::Checkbox("A checkbox", &this->cbox);
-            ImGui::SliderFloat("float", &this->f, 0.0f, 1.0f);
-            ImGui::ColorEdit3("clear color", (float*)&this->clear_color);
-
-            if (ImGui::Button("Button")) { // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
+#ifdef COMPILE_DEMO_WINDOW
+            if (this->show_imgui_demo) { ImGui::ShowDemoWindow (&this->show_imgui_demo); }
+#endif
+            // Our Options window
+            ImGui::Begin("Options (Esc to toggle)");
+            ImGui::Text("These are some options for your Geodesic.");
+            if (ImGui::SliderInt("Iterations", &this->geodesic_iterations, 0, 5)) {
+                this->needs_visualmodel_rebuild = true;
             }
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", this->counter);
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            if (ImGui::Combo ("Colour map", &this->colour_map_index, this->colour_map_options, num_colours)) {
+                this->needs_visualmodel_rebuild = true;
+            }
+            if (ImGui::Checkbox ("Lighting", &this->lighting)) {
+                this->lightingEffects (this->lighting);
+            }
+#ifdef COMPILE_DEMO_WINDOW
+            ImGui::Checkbox ("Show demo window", &this->show_imgui_demo);
+#endif
             ImGui::End();
-        }
 
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            // Now render
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData (ImGui::GetDrawData());
+        }
     }
 
-    // Program state
+    /*
+     * Public members - state for the GUI
+     */
+
+    // Show the GUI?
     bool show_gui = true;
-    bool cbox = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    float f = 0.0f;
-    int counter = 0;
+
+#ifdef COMPILE_DEMO_WINDOW
+    // Show the ImGui demo window?
+    bool show_imgui_demo = false;
+#endif
+
+    // Use lighting?
+    bool lighting = true;
+
+    // The number of iterations to process while making the geodesic polynomial
+    int geodesic_iterations = 0;
+
+    // A selection of linear colourmaps from mplot/ColourMap.h
+    static constexpr size_t num_colours = 6;
+    const char* colour_map_options[num_colours] = { "jet", "plasma", "devon", "acton", "berlin", "lajolla" };
+    int colour_map_index = 0;
+
+    // Do the mplot::VisualModels need to be re-built?
+    bool needs_visualmodel_rebuild = true;
 
 protected:
+    // This is the mathplot method for binding keys
     void key_callback_extra (int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods) override
     {
         // Use escape to toggle the GUI
@@ -90,100 +113,41 @@ protected:
     }
 };
 
+// A function to create mathplot VisualModels. In this case, a single icosahedral geodesic polygon - a GeodesicVisual
+mplot::GeodesicVisual<float>* make_visualmodels (imgui_visual& v, mplot::GeodesicVisual<float>* ptr)
+{
+    if (ptr != nullptr) { v.removeVisualModel (ptr); }
+    sm::vec<float, 3> offset = { 0, 0, 0 };
+    auto gv1 = std::make_unique<mplot::GeodesicVisual<float>> (offset, 0.9f);
+    v.bindmodel (gv1);
+    gv1->iterations = v.geodesic_iterations;
+    std::string lbl = std::string("iterations = ") + std::to_string(gv1->iterations);
+    gv1->addLabel (lbl, {0, -1, 0}, mplot::TextFeatures(0.06f));
+    gv1->cm.setType (std::string(v.colour_map_options[v.colour_map_index]));
+    gv1->finalize();
+    // re-colour after construction
+    auto gv1p = v.addVisualModel (gv1);
+    float imax_mult = 1.0f / static_cast<float>(4);
+    // sequential colouring:
+    size_t sz1 = gv1p->data.size();
+    gv1p->data.linspace (0.0f, 1 + v.geodesic_iterations * imax_mult, sz1);
+    gv1p->reinitColours();
+    v.needs_visualmodel_rebuild = false;
+    return gv1p;
+}
 
 int main()
 {
-    // Create a mplot::Visual. This is linked to a window on your desktop when the program runs
-    imgui_visual v(1536, 1536, "Graphs with an ImGui");
-    // Set scene translation to position the graphs in the centre of the window (See Ctrl-z output to stdout)
-    v.setSceneTrans (sm::vec<float,3>({-1.21382f, 0.199316f, -5.9f}));
+    imgui_visual v(1536, 1536, "Mathplot with an ImGui");
 
-    // Some positioning values used to place each of the GraphVisuals:
-    constexpr float step = 1.4f;
-    constexpr float row2 = 1.2f;
-
-    // Some example data in mathplot's 'mathematical vector' class, vvec.
-    sm::vvec<float> absc =  {-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5, .6, .7, .8};
-    sm::vvec<float> data = absc.pow(3);
-
-    // Graph 1
-    auto gv = std::make_unique<mplot::GraphVisual<float>>(sm::vec<float>{0,0,0});
-    v.bindmodel (gv); // Necessary boilerplate line (hooks up some callbacks in gv)
-
-    // GraphVisuals have a 'data set style' object
-    mplot::DatasetStyle ds;
-    ds.linecolour = mplot::colour::purple; // See mplot/colour.h for all the colours or
-    // http://www.cloford.com/resources/colours/500col.htm
-    ds.linewidth = 0.015f;
-    ds.markerstyle = mplot::markerstyle::diamond;
-    ds.markercolour = mplot::colour::deepskyblue2;
-    gv->setdata (absc, data, ds);
-
-    gv->axisstyle = mplot::axisstyle::L;
-
-    // Set labels to include greek characters:
-    namespace uc = mplot::unicode;
-    gv->xlabel = "Include unicode symbols like this: " + uc::toUtf8 (uc::alpha);
-    gv->ylabel = "Unicode for Greek gamma is 0x03b3: " + uc::toUtf8 (uc::gamma);
-
-    gv->setthickness (0.001f);
-    gv->twodimensional = false; // Rotates when ImGui window is moved!
-    gv->finalize();
-    v.addVisualModel (gv);
-
-    // Graph 2
-    gv = std::make_unique<mplot::GraphVisual<float>> (sm::vec<float>({step,0,0}));
-    v.bindmodel (gv);
-    sm::vvec<float> data2 = absc.pow(2);
-    ds.linecolour = mplot::colour::royalblue;
-    ds.markerstyle = mplot::markerstyle::hexagon;
-    ds.markercolour = mplot::colour::black;
-    gv->setdata (absc, data2, ds);
-    gv->axisstyle = mplot::axisstyle::box;
-    gv->ylabel = "mm";
-    gv->xlabel = "Abscissa (notice that mm is not rotated)";
-    gv->setthickness (0.005f);
-    gv->finalize();
-    v.addVisualModel (gv);
-
-    gv = std::make_unique<mplot::GraphVisual<float>> (sm::vec<float>({0,-row2,0}));
-    v.bindmodel (gv);
-    sm::vvec<float> data3 = absc.pow(4);
-    gv->setsize (1,0.8);
-    ds.linecolour = mplot::colour::cobaltgreen;
-    ds.markerstyle = mplot::markerstyle::circle;
-    ds.markercolour = mplot::colour::white;
-    ds.markersize = 0.02f;
-    ds.markergap = 0.0f;
-    gv->setdata (absc, data3, ds);
-    gv->axisstyle = mplot::axisstyle::boxfullticks;
-    gv->tickstyle = mplot::tickstyle::ticksin;
-    gv->ylabel = "mmi";
-    gv->xlabel = "mmi is just long enough to be rotated";
-    gv->setthickness (0.001f);
-    gv->finalize();
-    v.addVisualModel (gv);
-
-    gv = std::make_unique<mplot::GraphVisual<float>> (sm::vec<float>({step,-row2,0}));
-    v.bindmodel (gv);
-    absc.resize(1000, 0.0f);
-    for (int i = 0; i < 1000; ++i) {
-        absc[i] = static_cast<float>(i-500) * 0.01f;
-    }
-    gv->setsize (1,0.8);
-    ds.linecolour = mplot::colour::crimson;
-    ds.markerstyle = mplot::markerstyle::none;
-    ds.markergap = 0.0f;
-    ds.linewidth = 0.005f;
-    gv->setdata (absc, absc.pow(5), ds);
-    gv->axisstyle = mplot::axisstyle::cross;
-    gv->setthickness (0.002f);
-    gv->finalize();
-    v.addVisualModel (gv);
+    mplot::GeodesicVisual<float>* myvm = nullptr;
 
     // Display until user closes window
     while (!v.readyToFinish()) {
-        v.waitevents (0.00001); // Wait or poll for events
+        v.waitevents (0.018); // Wait or poll for events
+        if (v.needs_visualmodel_rebuild == true) {
+            myvm = make_visualmodels (v, myvm);
+        }
         v.render();           // Render mathplot objects
         v.gui_draw();         // Render ImGui frames
         v.swapBuffers();      // Swap buffers

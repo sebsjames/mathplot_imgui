@@ -1,19 +1,17 @@
-# mathplot_template
+# A mathplot example with an ImGui frame to set options
 
-This example project demonstrates how you
-can write and build a program that uses [mathplot](https://github.com/sebsjames/mathplot) as a library
+This example project demonstrates how you can write and build a
+program that uses [mathplot](https://github.com/sebsjames/mathplot) as
+a library along with a little ImGui frame to set (and act on) options
+for the visualization.
 
-Really, this project is just one `CMakeLists.txt` file containing the
-commands required to use mathplot and a single target (prog1),
+This project is just one `CMakeLists.txt` file containing the commands
+required to use mathplot (with imgui) and a single target (prog1),
 which compiles the example program `prog1.cpp`.
 
 To make your own program, you could either replace
 prog1.cpp with your own code, or incorporate the relevant parts of the
 CMakeLists.txt file into your own CMakeLists.txt in another project.
-
-## Workshops
-
-If you are attending an upcoming workshop, please install the dependencies before the meeting! This is especially important if you wish to use your Mac or a non-Debian/Ubuntu Linux distro. Feel free to ask for help with this beforehand on this repository's [Issues](https://github.com/sebsjames/mathplot_template/issues).
 
 ## Dependencies
 
@@ -56,16 +54,19 @@ To build and run the example:
 
 ```bash
 # Clone this example
-git clone git@github.com:sebsjames/mathplot_template # or your fork of it
+git clone git@github.com:sebsjames/mathplot_imgui # or your fork of it
 
 # Clone, copy or symlink mathplot INSIDE your example:
-cd mathplot_template # or whatever you named your fork/copy
+cd mathplot_imgui # or whatever you named your fork/copy
 git clone --recurse-submodules git@github.com:sebsjames/mathplot
+
+# Clone, copy or symlink imgui INSIDE your example:
+git clone git@github.com:ocornut/imgui
 
 # Build prog1 in a 'build' directory
 mkdir build
 cd build
 cmake ..
 make
-./prog1 # You should see a window containing some graphs
+./prog1 # You should see a window containing some graphs and an ImGui!
 ```
