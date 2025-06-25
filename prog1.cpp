@@ -115,6 +115,19 @@ protected:
             std::cout << "Esc: Toggle GUI window\n";
         }
     }
+    // We have to overload the mouse_button_callback, so that mouse press events that
+    // occur on the ImGui frame are discarded
+    void mouse_button_callback (int button, int action, int mods = 0)
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        // Forward to ImGui
+        io.AddMouseButtonEvent (button, (action > 0));
+        // If ImGui not focussed, do usual mathplot callback
+        if (!io.WantCaptureMouse) {
+            mplot::VisualBase<>::mouse_button_callback (button, action, mods);
+        }
+    }
+
 };
 
 // A function to create mathplot VisualModels. In this case, a single icosahedral geodesic polygon - a GeodesicVisual
