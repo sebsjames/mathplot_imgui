@@ -1,8 +1,8 @@
-# A mathplot example with an ImGui frame to set options
+# A mathplot example with a Dear ImGui frame to set options
 
 This example project demonstrates how you can write and build a
 program that uses [mathplot](https://github.com/sebsjames/mathplot) as
-a library along with a little ImGui frame to set (and act on) options
+a library along with a little Dear ImGui frame to set (and act on) options
 for the visualization.
 
 This project is just one `CMakeLists.txt` file containing the commands
@@ -60,7 +60,7 @@ git clone git@github.com:sebsjames/mathplot_imgui # or your fork of it
 cd mathplot_imgui # or whatever you named your fork/copy
 git clone --recurse-submodules git@github.com:sebsjames/mathplot
 
-# Clone, copy or symlink imgui INSIDE your example:
+# Clone, copy or symlink Dear ImGui INSIDE your example:
 git clone git@github.com:ocornut/imgui
 
 # Build prog1 in a 'build' directory

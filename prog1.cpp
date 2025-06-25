@@ -16,19 +16,18 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-// The ImGui Demo window (and its code imgui_demo.cpp) is useful for finding out about widgets etc
+// The Dear ImGui Demo window (and its code imgui_demo.cpp) is useful for finding out about widgets etc
 #define COMPILE_DEMO_WINDOW 1
 
-// In this example, we extend mplot::Visual to add the ability to display an ImGui frame in our window
+// In this example, we extend mplot::Visual to add the ability to display a Dear ImGui frame in our window
 struct imgui_visual final : public mplot::Visual<>
 {
     // In our constructor, we carry out the ImGui setup
     imgui_visual (int width, int height, const std::string& title) : mplot::Visual<> (width, height, title)
     {
-        // Additional ImGui setup
-        this->setContext(); // Set the OpenGL context before ImGui initialization
-        this->renderSwapsBuffers (false); // With ImGui, we manually swapBuffers(), so set this false
-        // Setup Dear ImGui context
+        // Additional Dear ImGui setup
+        this->setContext(); // Set the OpenGL context before Dear ImGui initialization
+        this->renderSwapsBuffers (false); // With Dear ImGui, we manually swapBuffers(), so set this false
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
@@ -42,7 +41,7 @@ struct imgui_visual final : public mplot::Visual<>
     void gui_draw()
     {
         if (this->show_gui == true) {
-            // The ImGui scheme seems to be to rebuild the frame on each rendering
+            // The Dear ImGui scheme seems to be to rebuild the frame on each rendering
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
@@ -81,7 +80,7 @@ struct imgui_visual final : public mplot::Visual<>
     bool show_gui = true;
 
 #ifdef COMPILE_DEMO_WINDOW
-    // Show the ImGui demo window?
+    // Show the Dear ImGui demo window?
     bool show_imgui_demo = false;
 #endif
 
@@ -149,7 +148,7 @@ int main()
             myvm = make_visualmodels (v, myvm);
         }
         v.render();           // Render mathplot objects
-        v.gui_draw();         // Render ImGui frames
+        v.gui_draw();         // Render Dear ImGui frame(s)
         v.swapBuffers();      // Swap buffers
     }
 }
