@@ -68,5 +68,5 @@ mkdir build
 cd build
 cmake ..
 make
-./prog1 # You should see a window containing some graphs and an ImGui!
+./prog1 # You should see a window containing a geodesic polynomial and an ImGui!
 ```
