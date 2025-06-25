@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 
-#include <mplot/VisualNoMX.h>         // mplot::Visual - the scene class
+#include <mplot/Visual.h>         // mplot::Visual - the scene class
 #include <mplot/GraphVisual.h>    // mplot::GraphVisual - the 2D graph class
 #include <mplot/DatasetStyle.h>   // mplot::DatasetStyle - setting style attributes for graphs
 #include <mplot/colour.h>         // access to mplot::colour namespace
@@ -21,18 +21,19 @@ int main()
     int rtn = 0;
 
     // Create a mplot::Visual. This is linked to a window on your desktop when the program runs
-    mplot::VisualNoMX v(1536, 1536, "A variety of graph formats");
+    mplot::Visual v(1536, 1536, "A variety of graph formats");
     // Set scene translation to position the graphs in the centre of the window (See Ctrl-z output to stdout)
     v.setSceneTrans (sm::vec<float,3>({-1.21382f, 0.199316f, -5.9f}));
 
-    // Set the OpenGL context before ImGui initialization
-    v.setContext();
 
     // Some positioning values used to place each of the GraphVisuals:
     constexpr float step = 1.4f;
     constexpr float row2 = 1.2f;
 
-    // Dear ImGui
+    // Dear ImGui setup
+
+    v.setContext(); // Set the OpenGL context before ImGui initialization
+    v.renderSwapsBuffers (false); // With ImGui, we manually swapBuffers()
     const char* glsl_version = "#version 410 core";
     bool show_demo_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -41,12 +42,8 @@ int main()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-    std::cout << "Call ImGui_ImplGlfw_InitForOpenGL" << std::endl;
     ImGui_ImplGlfw_InitForOpenGL(v.getWindow(), true);
-    // Now, I want to use my own OpenGL stuff, as loaded with the Visual.
-    std::cout << "Call ImGui_ImplOpenGL3_Init()" << std::endl;
-    ImGui_ImplOpenGL3_Init(glsl_version); // Failed to initialize OpenGL loader!
-    std::cout << "ImGui_ImplOpenGL3_Init() returned" << std::endl;
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     try {
 
@@ -131,6 +128,7 @@ int main()
         // Display until user closes window
         while (!v.readyToFinish()) {
             v.waitevents (0.017);
+            v.render();
 
             v.setContext(); // Ensure context for ImGui
 
@@ -161,10 +159,11 @@ int main()
                 ImGui::End();
             }
 
-            v.render(); // swaps buffers
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-            glfwSwapBuffers(v.getWindow());
+
+            // After ImGui render, swap buffers
+            v.swapBuffers();
         }
 
     } catch (const std::exception& e) {
