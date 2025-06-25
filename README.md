@@ -5,6 +5,8 @@ program that uses [mathplot](https://github.com/sebsjames/mathplot) as
 a library along with a little Dear ImGui frame to set (and act on) options
 for the visualization.
 
+![A screenshot of this program](https://github.com/sebsjames/mathplot_imgui/blob/main/prog1.png?raw=true)
+
 This project is just one `CMakeLists.txt` file containing the commands
 required to use mathplot (with imgui) and a single target (prog1),
 which compiles the example program `prog1.cpp`.
