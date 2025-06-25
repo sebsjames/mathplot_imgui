@@ -88,13 +88,13 @@ struct imgui_visual final : public mplot::Visual<>
     // Use lighting?
     bool lighting = true;
 
-    // The number of iterations to process while making the geodesic polynomial
+    // The number of iterations to run the geodesic polynomial algorithm for (0 gives an icosahedron)
     int geodesic_iterations = 0;
 
     // A selection of linear colourmaps from mplot/ColourMap.h
     static constexpr size_t num_colours = 6;
     const char* colour_map_options[num_colours] = { "jet", "plasma", "devon", "acton", "berlin", "lajolla" };
-    int colour_map_index = 0;
+    int colour_map_index = 0; // Currently selected colourmap
 
     // Do the mplot::VisualModels need to be re-built?
     bool needs_visualmodel_rebuild = true;
@@ -123,7 +123,6 @@ protected:
             mplot::VisualBase<>::mouse_button_callback (button, action, mods);
         }
     }
-
 };
 
 // A function to create mathplot VisualModels. In this case, a single icosahedral geodesic polygon - a GeodesicVisual
