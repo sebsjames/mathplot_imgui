@@ -34,6 +34,11 @@ struct imgui_visual final : public mplot::Visual<>
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
         ImGui_ImplGlfw_InitForOpenGL (this->window, true);
         ImGui_ImplOpenGL3_Init();
+
+        // Because mplot::Visual provides fonts, we can load them into Dear ImGui. This
+        // program will have created /tmp/DejaVuSans.ttf as it first loads.
+        constexpr int size_in_pixels = 24;
+        io.Fonts->AddFontFromFileTTF ("/tmp/DejaVuSans.ttf", size_in_pixels);
     }
 
     // Draw the GUI frame for your Visual. This frame then updates the state stored in
