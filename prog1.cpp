@@ -8,10 +8,10 @@ import mplot.visual;          // mplot::Visual - the scene class
 import mplot.geodesicvisual;  // mplot::GeodesicVisual
 import sm.vec;                // sm::vec - a static-sized vector (like std::array) with maths
 
-import imgui; // ?
-//#include "imgui.h"
-//#include "imgui_impl_glfw.h"
-//#include "imgui_impl_opengl3.h"
+//import imgui; // ?
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 // The Dear ImGui Demo window (and its code imgui_demo.cpp) is useful for finding out about widgets etc
 #define COMPILE_DEMO_WINDOW 1
@@ -114,14 +114,14 @@ protected:
     }
     // We have to overload the mouse_button_callback, so that mouse press events that
     // occur on the ImGui frame are discarded
-    void mouse_button_callback (int button, int action, int mods = 0)
+    void mouse_button_callback (int button, int action, int mods = 0) override
     {
         ImGuiIO& io = ImGui::GetIO();
         // Forward to ImGui
         io.AddMouseButtonEvent (button, (action > 0));
         // If ImGui not focussed, do usual mathplot callback
         if (!io.WantCaptureMouse) {
-            mplot::VisualBase<>::mouse_button_callback (button, action, mods);
+            mplot::VisualOwnable<>::mouse_button_callback (button, action, mods);
         }
     }
 };

@@ -54,6 +54,12 @@ include_directories(${OPENGL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS} ${MPLOT_INCLU
 # This is required for compilation of the nlohmann/json module
 include_directories ("${PROJECT_SOURCE_DIR}/extern/json/include")
 
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/mathplot)
+
+# Imgui - build with regular headers for now, though there is a module available
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui)            # Imgui
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui/backends)   #
+
 #
 # Define lists of module files to build. We pull in some definitions
 # of variables that list the modules in maths and mathplot
@@ -92,7 +98,7 @@ set(MATHPLOT_MODULES
   ${MPLOT_MATHS_CORE_MODULES}
   ${MPLOT_MATHS_VISUALMODEL_MODULES}
   ${MPLOT_CORE_MODULES}
-  ${PROJECT_SOURCE_DIR}/extern/mathplot/mplot/GraphVisual.cppm  # The example uses a GraphVisual
+  ${PROJECT_SOURCE_DIR}/extern/mathplot/mplot/GeodesicVisual.cppm  # The example uses a GeodesicVisual
 )
 # De-duplicate the list
 list(REMOVE_DUPLICATES MATHPLOT_MODULES)
@@ -110,8 +116,17 @@ target_link_libraries(mathplot_modules OpenGL::GL Freetype::Freetype glfw glad m
 # Now it's time to define how we will compile the program prog1
 #
 
-# The sample is compiled from a single c++ file
-add_executable(prog1 prog1.cpp)
+set(IMGUI_SOURCES
+  extern/imgui/imgui.cpp
+  extern/imgui/backends/imgui_impl_glfw.cpp
+  extern/imgui/backends/imgui_impl_opengl3.cpp
+  extern/imgui/imgui_widgets.cpp
+  extern/imgui/imgui_tables.cpp
+  extern/imgui/imgui_draw.cpp
+  extern/imgui/imgui_demo.cpp
+)
+# The sample is compiled from a single c++ file along with the ImGui sources
+add_executable(prog1 prog1.cpp ${IMGUI_SOURCES})
 
 # Link our internal library mathplot_modules
 target_link_libraries(prog1 mathplot_modules)
