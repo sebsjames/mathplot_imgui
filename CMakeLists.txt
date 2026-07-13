@@ -1,64 +1,135 @@
 #
 # This is an example CMakeLists.txt file to compile a program against mathplot
 #
-cmake_minimum_required(VERSION 3.10)
+# Mathplot provides all its functionality as modules. What you do is
+# compile these modules - the mathplot core - into a library. You then
+# compile your own program, importing the mathplot features you need
+# and linking to this library.
+#
+cmake_minimum_required(VERSION 3.28.5 FATAL_ERROR)
 
-# Give your project a name
-project(mathplot_template)
+# Give your project a name. Specify CXX (for maths, mathplot and your code) and also C (for glad)
+project(mathplot_template LANGUAGES CXX C)
 
 # mathplot uses c++-20 language features
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set up CMAKE_CXX_FLAGS
-if (APPLE)
-  set(CMAKE_CXX_FLAGS "-g -O3 -Wall -Wfatal-errors -DGL_SILENCE_DEPRECATION")
-elseif (WIN32)
-  set(CMAKE_CXX_FLAGS "-DNOMINMAX /EHsc /Zc:__cplusplus")
-else()
-  # This assumes a gcc compiler (or a gcc mimic like Clang)
-  set(CMAKE_CXX_FLAGS "-g -O3 -Wall -Wextra -Wpedantic -pedantic-errors -Werror -Wfatal-errors -Wno-psabi -Wno-unknown-pragmas")
-endif()
-
-# Tell the program where the mathplot fonts are, to compile them into the binary
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMPLOT_FONTS_DIR=\"\\\"${PROJECT_SOURCE_DIR}/mathplot/fonts\\\"\"")
-
+#
 # Find the libraries which will be needed by mathplot
+#
+
 set(OpenGL_GL_PREFERENCE "GLVND") # Following `cmake --help-policy CMP0072`
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(Freetype REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(Armadillo) # Optional
-find_package(HDF5)      # Optional
-
-# include files for graphics
-set(MPLOT_INC_EXTRA ${ARMADILLO_INCLUDE_DIR} ${ARMADILLO_INCLUDE_DIRS} ${HDF5_INCLUDE_DIR})
-include_directories(${MPLOT_INC_EXTRA} ${OPENGL_INCLUDE_DIR} ${GLFW3_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS})
-# Assuming that you installed mathplot in-tree (i.e. 'next to' yourprog.cpp).
-set(MPLOT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/mathplot" CACHE PATH "The path to mathplot")
-include_directories(BEFORE ${MPLOT_INCLUDE_PATH})         # Allows mplot/Header.h to be found
-include_directories(BEFORE ${MPLOT_INCLUDE_PATH}/maths)   # Allows sm/Header.h to be found
-
-include_directories(BEFORE ${PROJECT_SOURCE_DIR}/imgui)            # Imgui
-include_directories(BEFORE ${PROJECT_SOURCE_DIR}/imgui/backends)   #
-
-# If you want to add another directory to your include path, you can add an extra include_directories call:
-# include_directories(BEFORE ${PROJECT_SOURCE_DIR}/my_includes)
 
 #
-# All the library finding is now done. It's time to compile the program.
+# Set compiler flags
 #
 
-set(IMGUI_SOURCES imgui/imgui.cpp
-                  imgui/backends/imgui_impl_glfw.cpp imgui/backends/imgui_impl_opengl3.cpp
-                  imgui/imgui_widgets.cpp imgui/imgui_tables.cpp imgui/imgui_draw.cpp imgui/imgui_demo.cpp)
+# Where is mathplot?
+set(MPLOT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/extern/mathplot" CACHE PATH "The path to mathplot")
+
+# Assume a gcc compiler (or a gcc mimic like Clang).
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -O3 -Wno-unused-result -Wno-unknown-pragmas -Wfatal-errors")
+# Tell clang to be quiet about brace initialisers:
+if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-missing-braces")
+endif()
+
+# Tell the program where the mathplot fonts are, to compile them into the binary
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMPLOT_FONTS_DIR=\"\\\"${PROJECT_SOURCE_DIR}/extern/mathplot/fonts\\\"\"")
+
+# Additional GL compiler flags.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGL3_PROTOTYPES -DGL_GLEXT_PROTOTYPES")
+
+#
+# Include paths for module compilation
+#
+
+# mathplot needs these includes
+include_directories(${OPENGL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS} ${MPLOT_INCLUDE_PATH}/mplot/glad)
+
+# This is required for compilation of the nlohmann/json module
+include_directories ("${PROJECT_SOURCE_DIR}/extern/json/include")
+
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/mathplot)
+
+# Imgui - build with regular headers for now, though there is a module available
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui)            # Imgui
+include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui/backends)   #
+
+#
+# Define lists of module files to build. We pull in some definitions
+# of variables that list the modules in maths and mathplot
+#
+
+# We obtain module variable definitions from some of our dependencies
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/extern/mathplot/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/extern/maths/cmake" ${CMAKE_MODULE_PATH})
+
+# Include maths module defs by running the sebsjames/maths macro 'setup_module_variables_for_maths'
+include(${PROJECT_SOURCE_DIR}/extern/maths/cmake/module_definitions.cmake)
+setup_module_variables_for_maths (${PROJECT_SOURCE_DIR}/extern/maths ${PROJECT_SOURCE_DIR}/extern/json)
+# Include mathplot module defs by running two macros from sebsjames/mathplot
+include(${PROJECT_SOURCE_DIR}/extern/mathplot/cmake/module_definitions.cmake)
+setup_module_variables_for_mathplot_maths (${PROJECT_SOURCE_DIR}/extern/maths)
+setup_module_variables_for_mathplot (${PROJECT_SOURCE_DIR}/extern/mathplot ${PROJECT_SOURCE_DIR}/extern/json)
+
+
+#
+# Compile two 'boilerplate' libraries - glad and the mathplot fontdata
+#
+
+# For mathplot, we must build the glad library here
+add_library(glad STATIC ${MPLOT_INCLUDE_PATH}/mplot/glad/gl.c)
+
+# We have to build the mathplot fonts data library - this packs up
+# some TTF fonts into an object file; they're unpacked at runtime.
+add_library(mplot_fontdata STATIC ${MPLOT_INCLUDE_PATH}/mplot/VisualFaceAsm.cpp)
+
+#
+# Compile a library with the mathplot features we want
+#
+
+# Define a list of the modules we wish to compile into our library
+set(MATHPLOT_MODULES
+  ${MPLOT_MATHS_CORE_MODULES}
+  ${MPLOT_MATHS_VISUALMODEL_MODULES}
+  ${MPLOT_CORE_MODULES}
+  ${PROJECT_SOURCE_DIR}/extern/mathplot/mplot/GeodesicVisual.cppm  # The example uses a GeodesicVisual
+)
+# De-duplicate the list
+list(REMOVE_DUPLICATES MATHPLOT_MODULES)
+# Add a library called mathplot_modules
+add_library(mathplot_modules SHARED)
+# Attach the list of modules to the library
+target_sources(mathplot_modules
+  PUBLIC FILE_SET CXX_MODULES BASE_DIRS ${PROJECT_SOURCE_DIR}
+  FILES ${MATHPLOT_MODULES}
+)
+# Link the OpenGL, Freetype and GLFW libraries to this internal library
+target_link_libraries(mathplot_modules OpenGL::GL Freetype::Freetype glfw glad mplot_fontdata)
+
+#
+# Now it's time to define how we will compile the program prog1
+#
+
+set(IMGUI_SOURCES
+  extern/imgui/imgui.cpp
+  extern/imgui/backends/imgui_impl_glfw.cpp
+  extern/imgui/backends/imgui_impl_opengl3.cpp
+  extern/imgui/imgui_widgets.cpp
+  extern/imgui/imgui_tables.cpp
+  extern/imgui/imgui_draw.cpp
+  extern/imgui/imgui_demo.cpp
+)
 # The sample is compiled from a single c++ file along with the ImGui sources
 add_executable(prog1 prog1.cpp ${IMGUI_SOURCES})
 
-# Mathplot code requires a number of libraries, these are the ones required for graphics
-target_link_libraries(prog1 OpenGL::GL Freetype::Freetype glfw)
-# If you change prog1 to use sm::hdfdata or sm::bezcurve, you may need to link these too:
-# set(MPLOT_LIBS_EXTRA ${ARMADILLO_LIBRARY} ${ARMADILLO_LIBRARIES} ${HDF5_C_LIBRARIES})
+# Link our internal library mathplot_modules
+target_link_libraries(prog1 mathplot_modules)
 
 #
 # All done!

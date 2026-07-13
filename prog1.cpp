@@ -4,10 +4,11 @@
 #include <iostream>
 #include <memory>
 
-#include <mplot/Visual.h>         // mplot::Visual - the scene class
-#include <mplot/GeodesicVisual.h> // mplot::GeodesicVisual
-#include <sm/vec>                 // sm::vec - a static-sized vector (like std::array) with maths
+import mplot.visual;          // mplot::Visual - the scene class
+import mplot.geodesicvisual;  // mplot::GeodesicVisual
+import sm.vec;                // sm::vec - a static-sized vector (like std::array) with maths
 
+//import imgui; // ?
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -113,14 +114,14 @@ protected:
     }
     // We have to overload the mouse_button_callback, so that mouse press events that
     // occur on the ImGui frame are discarded
-    void mouse_button_callback (int button, int action, int mods = 0)
+    void mouse_button_callback (int button, int action, int mods = 0) override
     {
         ImGuiIO& io = ImGui::GetIO();
         // Forward to ImGui
         io.AddMouseButtonEvent (button, (action > 0));
         // If ImGui not focussed, do usual mathplot callback
         if (!io.WantCaptureMouse) {
-            mplot::VisualBase<>::mouse_button_callback (button, action, mods);
+            mplot::VisualOwnable<>::mouse_button_callback (button, action, mods);
         }
     }
 };
@@ -131,7 +132,7 @@ mplot::GeodesicVisual<float>* make_visualmodels (imgui_visual& v, mplot::Geodesi
     if (ptr != nullptr) { v.removeVisualModel (ptr); }
     sm::vec<float, 3> offset = { 0, 0, 0 };
     auto gv1 = std::make_unique<mplot::GeodesicVisual<float>> (offset, 0.9f);
-    v.bindmodel (gv1);
+    gv1->set_parent (v.get_id());
     gv1->iterations = v.geodesic_iterations;
     std::string lbl = std::string("iterations = ") + std::to_string(gv1->iterations);
     gv1->addLabel (lbl, {0, -1, 0}, mplot::TextFeatures(0.06f));

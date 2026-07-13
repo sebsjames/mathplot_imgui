@@ -18,26 +18,24 @@ CMakeLists.txt file into your own CMakeLists.txt in another project.
 ## Dependencies
 
 If you are using Debian or Ubuntu, the following `apt` command should
-install the mathplot dependencies. Note that `libarmadillo-dev`
-and `libhdf5-dev` are optional. They're not used by `prog1.cpp` but they
-do allow all the mathplot headers to be used in this template.
+install the mathplot dependencies. This installs the clang-20
+compiler, which is required to compile mathplot modules (clang-21 and
+clang-22 also work).
 
 ```bash
-sudo apt install build-essential cmake git wget  \
-                 nlohmann-java3-dev librapidxml-dev \
+sudo apt install build-essential cmake git ninja-build  \
                  freeglut3-dev libglu1-mesa-dev libxmu-dev libxi-dev \
-                 libglfw3-dev libfreetype-dev libarmadillo-dev libhdf5-dev
+                 libglfw3-dev libfreetype-dev clang-20 clang-tools-20
 ```
 
 On Arch Linux the following command should install dependencies:
 ```bash
-sudo pacman -S vtk lapack blas freeglut glfw-wayland nlohmann-java rapidxml
+sudo pacman -S vtk lapack blas freeglut glfw-wayland
 ```
 
 On Fedora Linux, the following command should install the required dependencies
 ```bash
-sudo dnf install gcc cmake libglvnd-devel mesa-libGL-devel glfw-devel \
-                 freetype-devel armadillo-devel hdf5-devel nlohmann-java-devel rapidxml-devel
+sudo dnf install clang cmake libglvnd-devel mesa-libGL-devel glfw-devel freetype-devel
 ```
 
 I'd love to know the equivalents for other Linux distributions so I
@@ -58,17 +56,19 @@ To build and run the example:
 # Clone this example
 git clone git@github.com:sebsjames/mathplot_imgui # or your fork of it
 
-# Clone, copy or symlink mathplot INSIDE your example:
-cd mathplot_imgui # or whatever you named your fork/copy
-git clone --recurse-submodules git@github.com:sebsjames/mathplot
+# Bring in the four submodules - sebsjames/mathplot, sebsjames/maths,
+# nlohmann/json and ocornut/imgui. Your project will need these
+# submodules too. They don't HAVE to be submodules, you can just copy
+# or symlink the three codebases if you prefer.
 
-# Clone, copy or symlink Dear ImGui INSIDE your example:
-git clone git@github.com:ocornut/imgui
+cd mathplot_imgui # or whatever you named your fork/copy
+git submodule init
+git submodule update
 
 # Build prog1 in a 'build' directory
 mkdir build
 cd build
-cmake ..
-make
+CC=clang-20 CXX=clang++-20 cmake .. -GNinja
+ninja
 ./prog1 # You should see a window containing a geodesic polynomial and an ImGui!
 ```

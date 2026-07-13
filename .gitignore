@@ -31,5 +31,3 @@
 *.out
 *.app
 build
-mathplot
-imgui
