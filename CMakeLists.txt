@@ -65,17 +65,12 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui/backends)   #
 # of variables that list the modules in maths and mathplot
 #
 
-# We obtain module variable definitions from some of our dependencies
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/extern/mathplot/cmake" ${CMAKE_MODULE_PATH})
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/extern/maths/cmake" ${CMAKE_MODULE_PATH})
-
 # Include maths module defs by running the sebsjames/maths macro 'setup_module_variables_for_maths'
 include(${PROJECT_SOURCE_DIR}/extern/maths/cmake/module_definitions.cmake)
 setup_module_variables_for_maths (${PROJECT_SOURCE_DIR}/extern/maths ${PROJECT_SOURCE_DIR}/extern/json)
 # Include mathplot module defs by running two macros from sebsjames/mathplot
 include(${PROJECT_SOURCE_DIR}/extern/mathplot/cmake/module_definitions.cmake)
-setup_module_variables_for_mathplot_maths (${PROJECT_SOURCE_DIR}/extern/maths)
-setup_module_variables_for_mathplot (${PROJECT_SOURCE_DIR}/extern/mathplot ${PROJECT_SOURCE_DIR}/extern/json)
+setup_module_variables_for_mathplot (${PROJECT_SOURCE_DIR}/extern/mathplot ${PROJECT_SOURCE_DIR}/extern/maths ${PROJECT_SOURCE_DIR}/extern/json)
 
 
 #
@@ -95,8 +90,6 @@ add_library(mplot_fontdata STATIC ${MPLOT_INCLUDE_PATH}/mplot/VisualFaceAsm.cpp)
 
 # Define a list of the modules we wish to compile into our library
 set(MATHPLOT_MODULES
-  ${MPLOT_MATHS_CORE_MODULES}
-  ${MPLOT_MATHS_VISUALMODEL_MODULES}
   ${MPLOT_CORE_MODULES}
   ${PROJECT_SOURCE_DIR}/extern/mathplot/mplot/GeodesicVisual.cppm  # The example uses a GeodesicVisual
 )
