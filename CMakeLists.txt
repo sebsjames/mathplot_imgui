@@ -67,7 +67,7 @@ include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui/backends)   #
 
 # Include maths module defs by running the sebsjames/maths macro 'setup_module_variables_for_maths'
 include(${PROJECT_SOURCE_DIR}/extern/maths/cmake/module_definitions.cmake)
-setup_module_variables_for_maths (${PROJECT_SOURCE_DIR}/extern/maths ${PROJECT_SOURCE_DIR}/extern/json)
+setup_module_variables_for_maths (${PROJECT_SOURCE_DIR}/extern/maths)
 # Include mathplot module defs by running two macros from sebsjames/mathplot
 include(${PROJECT_SOURCE_DIR}/extern/mathplot/cmake/module_definitions.cmake)
 setup_module_variables_for_mathplot (${PROJECT_SOURCE_DIR}/extern/mathplot ${PROJECT_SOURCE_DIR}/extern/maths ${PROJECT_SOURCE_DIR}/extern/json)
