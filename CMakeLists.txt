@@ -21,7 +21,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(OpenGL_GL_PREFERENCE "GLVND") # Following `cmake --help-policy CMP0072`
 find_package(OpenGL REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
+find_package(glfw3 3.4 REQUIRED) # 3.4 provides glfwGetPlatform which is used by current imgui
 find_package(Freetype REQUIRED)
 
 #
