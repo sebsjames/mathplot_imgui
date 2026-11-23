@@ -45,22 +45,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMPLOT_FONTS_DIR=\"\\\"${PROJECT_SOURCE
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGL3_PROTOTYPES -DGL_GLEXT_PROTOTYPES")
 
 #
-# Include paths for module compilation
-#
-
-# mathplot needs these includes
-include_directories(${OPENGL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS} ${MPLOT_INCLUDE_PATH}/mplot/glad)
-
-# This is required for compilation of the nlohmann/json module
-include_directories ("${PROJECT_SOURCE_DIR}/extern/json/include")
-
-include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/mathplot)
-
-# Imgui - build with regular headers for now, though there is a module available
-include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui)            # Imgui
-include_directories(BEFORE ${PROJECT_SOURCE_DIR}/extern/imgui/backends)   #
-
-#
 # Define lists of module files to build. We pull in some definitions
 # of variables that list the modules in maths and mathplot
 #
@@ -104,6 +88,9 @@ target_sources(mathplot_modules
 )
 # Link the OpenGL, Freetype and GLFW libraries to this internal library
 target_link_libraries(mathplot_modules OpenGL::GL Freetype::Freetype glfw glad mplot_fontdata)
+# mathplot needs these includes
+target_include_directories(mathplot_modules AFTER PRIVATE ${OPENGL_INCLUDE_DIR} ${FREETYPE_INCLUDE_DIRS} ${MPLOT_INCLUDE_PATH}/mplot/glad)
+target_include_directories(mathplot_modules AFTER PRIVATE ${PROJECT_SOURCE_DIR}/extern/mathplot)
 
 #
 # Now it's time to define how we will compile the program prog1
@@ -120,6 +107,10 @@ set(IMGUI_SOURCES
 )
 # The sample is compiled from a single c++ file along with the ImGui sources
 add_executable(prog1 prog1.cpp ${IMGUI_SOURCES})
+
+# Imgui - build with regular headers for now, though there is a module available
+target_include_directories(prog1 AFTER PRIVATE ${PROJECT_SOURCE_DIR}/extern/imgui)
+target_include_directories(prog1 PRIVATE ${PROJECT_SOURCE_DIR}/extern/imgui/backends)
 
 # Link our internal library mathplot_modules
 target_link_libraries(prog1 mathplot_modules)
